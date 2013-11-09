@@ -1,9 +1,7 @@
 package d24;
 
-import robocode.HitByBulletEvent;
-import robocode.HitWallEvent;
+import robocode.*;
 import robocode.Robot;
-import robocode.ScannedRobotEvent;
 
 import java.awt.*;
 
@@ -53,6 +51,15 @@ public class WilBotV1 extends Robot {
         else {
             ahead(100);
         }
+    }
+
+    @Override
+    public void onHitRobot(HitRobotEvent event) {
+        double currentGunHeading = getGunHeading();
+        peek = true;
+        turnGunLeft(event.getBearing() - currentGunHeading);
+        peek = false;
+        turnGunRight(event.getBearing() - currentGunHeading);
     }
 
     @Override
