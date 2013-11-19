@@ -52,22 +52,44 @@ public class EllipseEquation {
 	/**
 	 * 
 	 * @param y
-	 * @return 
+	 * @return the nearest cordinate
 	 */
 	public double getX(double y) {
-		return Math.sqrt((1 - sqr(y - vertexY)/sqr(b))) * a + vertexX;
+		double sqrt = Math.sqrt((1 - sqr(y - vertexY)/sqr(b))) * a;
+		return Math.min(vertexX + sqrt, vertexX - sqrt);
 	}
 	
 	/**
 	 * 
 	 * @param x
-	 * @return
+	 * @return the nearest cordinate
 	 */
 	public double getY(double x) {
-		return Math.sqrt((1 - sqr(x - vertexX)/sqr(a))) * b + vertexY;
+		double sqrt = Math.sqrt((1 - sqr(x - vertexX)/sqr(a))) * b;
+		return Math.min(vertexY + sqrt, vertexY - sqrt);
 	}
 
 	public boolean inPath(double x, double y) {
 		return Math.round(x) == Math.round(getX(y));
+	}
+
+	/**
+	 * Check if a point is inside or outside the ellipse area
+	 * @return
+	 */
+	public boolean inside(double x, double y) {
+		return (sqr((x-vertexX) / a)+ sqr((y - vertexY) / b)) < 1;
+	}
+
+	public boolean isBelowY(double y) {
+		return y - vertexY < 0;
+	}
+
+	public double leftMostX() {
+		return vertexX - a;
+	}
+	
+	public double rightMostX() {
+		return vertexX + a;
 	}
 }

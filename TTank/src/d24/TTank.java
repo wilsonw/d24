@@ -10,7 +10,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import robocode.AdvancedRobot;
+import robocode.Condition;
+import robocode.CustomEvent;
+import robocode.HitRobotEvent;
+import robocode.HitWallEvent;
 import robocode.ScannedRobotEvent;
+import robocode.util.Utils;
 
 /**
  * @author F413852
@@ -26,23 +31,50 @@ public class TTank extends AdvancedRobot {
 	private static final int CLOCK_WISE = 1;
 	private static final int ANTI_CLOCK_WISE = -1;
 
-
+	private int tooCloseToWall = 0;
+	
 	private int moveDirection = CLOCK_WISE;
 
 	private static final long MAX_DIFF_LAST_UPDATE_IN_MILLIS = 300; // timeout assume death for enemy
 
 	private int applyStrategy = STRATEGY_MELEE;
+	
+	private double wallMargin = 60;
 
 	@Override
 	public void run() {
 		setAdjustGunForRobotTurn(true);
 		setAdjustRadarForGunTurn(true);
-		EllipseEquation.initialize(getBattleFieldWidth() / 2 - 40, getBattleFieldHeight() / 2 - 40, getBattleFieldWidth() / 2, getBattleFieldHeight() / 2);
+		double vertexX = getBattleFieldWidth() / 2;
+		double vertexY = getBattleFieldHeight() / 2;
+		//EllipseEquation.initialize(getBattleFieldWidth() / 2 - 40, getBattleFieldHeight() / 2 - 40, getBattleFieldWidth() / 2, getBattleFieldHeight() / 2);
+		double deltaX = Math.abs(vertexX - getX());
+		double deltaY = Math.abs(vertexY - getY());
+		double distanceToCenter = Math.sqrt(sqr(deltaX) + sqr(deltaY));
+		double a = distanceToCenter;
+		double b = a; // circle
+		EllipseEquation.initialize(a, b, vertexX, vertexY);
+		
+		addCustomEvent(new Condition("too_close_to_walls") {
+            public boolean test() {
+                return (
+                    // we're too close to the left wall
+                    (getX() <= wallMargin ||
+                     // or we're too close to the right wall
+                     getX() >= getBattleFieldWidth() - wallMargin ||
+                     // or we're too close to the bottom wall
+                     getY() <= wallMargin ||
+                     // or we're too close to the top wall
+                     getY() >= getBattleFieldHeight() - wallMargin)
+                    );
+                }
+            });
+		
 		while (true) {
 			applyStrategy = getOthers() == 1 ? STRATEGY_ONE_ONE : STRATEGY_MELEE;
 			setTurnRadarLeft(360);
 //			setTurnL
-			moveInEllipse();
+//			moveInEllipse();
 			execute();
 		}
 	}
@@ -52,36 +84,48 @@ public class TTank extends AdvancedRobot {
 	 */
 	private void moveInEllipse() {
 		// if we're in the orbit path, then just move based on the moveDirection, otherwise need to position our self
-		out.println("x=" + getX() + " - y=" + getY());
+		boolean isInside = EllipseEquation.getInstance().inside(getX(), getY());
+		out.println("x=" + getX() + " - y=" + getY() + " - inside=" + isInside);
+		double futureX = getX() + moveDirection * (EllipseEquation.getInstance().isBelowY(getY()) ? -1 : 1) * 37; // follow the moveDirection
+		if (futureX < EllipseEquation.getInstance().leftMostX()) {
+			futureX = EllipseEquation.getInstance().leftMostX();
+		}
+		if (futureX > EllipseEquation.getInstance().rightMostX()) {
+			futureX = EllipseEquation.getInstance().rightMostX();
+		}
+		double futureY = EllipseEquation.getInstance().getY(futureX);
+		double distance = Point2D.distance(getX(), getY(), futureX, futureY);
 		if (EllipseEquation.getInstance().inPath(getX(), getY())) {
 			out.println("I'm in the orbit path now!!");
 			// TODO how to move within the orbit
+			
 		} else {
 			double x1 = EllipseEquation.getInstance().getX(getY());
 			double y1 = EllipseEquation.getInstance().getY(getX());
-			double a = Math.abs(getX() - x1);
-			double b = Math.abs(getY() - y1);
-			double c = Point2D.distance(x1, getY(), getX(), y1);
-			double distance = a*b/c;
-			double deltaX = distance * Math.sqrt(sqr(a) - sqr(distance)) / a;
-			double deltaY = distance * Math.sqrt(sqr(b) - sqr(distance)) / b;
-			double futureX = getX() + (x1 < getX() ? -1 : 1) * deltaX;
-			double futureY = getY() + (y1 < getY() ? -1 : 1) * deltaY;
-			out.println(new StringBuffer()
-						.append("x1=").append(x1).append("\n")
-						.append("y1=").append(y1).append("\n")
-						.append("c=").append(c).append("\n")
-						.append("a=").append(a).append("\n")
-						.append("b=").append(b).append("\n")
-						.append("c=").append(c).append("\n")
-					);
-			out.println("Future(x,y): " + futureX + " - " + futureY + ", distance=" + distance);
-			
-			double absDeg = absoluteBearing(getX(), getY(), futureX, futureY);
-			
-			setTurnLeft(normalizeBearing(absDeg) - getHeading());
-			setAhead(distance);
+			if (!Double.isNaN(y1) && !Double.isNaN(x1)) {
+				double a = Math.abs(getX() - x1);
+				double b = Math.abs(getY() - y1);
+				double c = Point2D.distance(x1, getY(), getX(), y1);
+				distance = a*b/c;
+				double deltaX = distance * Math.sqrt(sqr(a) - sqr(distance)) / a;
+				double deltaY = distance * Math.sqrt(sqr(b) - sqr(distance)) / b;
+				futureX = getX() + (isInside ? 1 : -1) * (x1 < getX() ? -1 : 1) * deltaX;
+				futureY = getY() + (isInside ? 1 : -1) * (y1 < getY() ? -1 : 1) * deltaY;
+				out.println(new StringBuffer()
+							.append("x1=").append(x1).append("\n")
+							.append("y1=").append(y1).append("\n")
+							.append("a=").append(a).append("\n")
+							.append("b=").append(b).append("\n")
+							.append("c=").append(c)
+						);
+			}
 		}
+		out.println("Future(x,y): " + futureX + " - " + futureY + ", distance=" + distance + "\n");
+		
+		double absDeg = absoluteBearing(getX(), getY(), futureX, futureY);
+		
+		setTurnRight(normalizeBearing(absDeg - getHeading()));
+		setAhead(distance);
 	}
 
 	@Override
@@ -123,10 +167,20 @@ public class TTank extends AdvancedRobot {
 				nearest = et;
 			}
 		}
-		// fire at it
-		// setTurnRight(nearest.getBearing());
-		// ahead(nearest.getDistance() + 5);
+		// if we're close to the wall, eventually, we'll move away
+        if (tooCloseToWall > 0) { tooCloseToWall--; }
+        
+		if (getVelocity() == 0 || getTime() % 20 == 0) {
+			moveDirection *= -1;
+			setMaxVelocity(8);
+		}
+		setTurnRight(adjustHeadingForWall(normalizeBearing(nearest.getBearing() + 90 - (15 * moveDirection))));
+		setAhead(1000 * moveDirection);		
 		predictiveFire(nearest);
+	}
+	
+	private double adjustHeadingForWall(double x) {
+		return x;
 	}
 
 	private void predictiveFire(EnemyTank enemy) {
@@ -211,4 +265,111 @@ public class TTank extends AdvancedRobot {
 	        double ePY = p1.getY() + (int) (height * Math.sin(Math.toRadians(angleInDegrees)));
 	        return new Point2D.Double(ePX, ePY);
 	}
+	
+	@Override
+	public void onHitRobot(HitRobotEvent event) {
+		moveDirection *= -1;
+	}
+	
+	@Override
+	public void onHitWall(HitWallEvent event) {
+		moveDirection *= -1;
+	}
+	
+	public void onCustomEvent(CustomEvent e) {
+        if (e.getCondition().getName().equals("too_close_to_walls"))
+        {
+            if (tooCloseToWall <= 0) {
+                // if we weren't already dealing with the walls, we are now
+                tooCloseToWall += wallMargin;
+                setMaxVelocity(0); // stop!!!
+            }
+        }
+    }
+	
+	public Point2D.Double fastWallSmooth(Point2D.Double orbitCenter, Point2D.Double position, double direction, double distanceToOrbitCenter){
+		final double MARGIN = 18;
+		final double STICK_LENGTH = 150;
+	 
+		double fieldWidth = getBattleFieldWidth(), fieldHeight = getBattleFieldHeight();
+	 
+		double stick = Math.min(STICK_LENGTH, distanceToOrbitCenter);
+		double stickSquared = sqr(stick);
+	 
+		int LEFT = -1, RIGHT = 1, TOP = 1, BOTTOM = -1;
+	 
+		int topOrBottomWall = 0;
+		int leftOrRightWall = 0;
+	 
+		double desiredAngle = Utils.normalAbsoluteAngle(absoluteAngle(position, orbitCenter) - direction * Math.PI / 2.0);
+		Point2D.Double projected = projectPoint(position, desiredAngle, stick);
+		if(projected.x >= 18 && projected.x <= fieldWidth - 18 && projected.y >= 18 && projected.y <= fieldHeight - 18)
+			return projected;
+	 
+		if(projected.x  > fieldWidth - MARGIN || position.x  > fieldWidth - stick - MARGIN) leftOrRightWall = RIGHT;
+		else if (projected.x < MARGIN || position.x < stick + MARGIN) leftOrRightWall = LEFT;
+	 
+		if(projected.y > fieldHeight - MARGIN || position.y > fieldHeight - stick - MARGIN) topOrBottomWall = TOP;
+		else if (projected.y < MARGIN || position.y < stick + MARGIN) topOrBottomWall = BOTTOM;
+	 
+		if(topOrBottomWall == TOP){
+			if(leftOrRightWall == LEFT){
+				if(direction > 0)
+					//smooth against top wall
+					return new Point2D.Double(position.x + direction * Math.sqrt(stickSquared - sqr(fieldHeight - MARGIN - position.y)), fieldHeight - MARGIN);
+				else
+					//smooth against left wall
+					return new Point2D.Double(MARGIN, position.y + direction * Math.sqrt(stickSquared - sqr(position.x - MARGIN)));
+	 
+			} else if(leftOrRightWall == RIGHT){
+				if(direction > 0)
+					//smooth against right wall
+					return new Point2D.Double(fieldWidth - MARGIN, position.y - direction * Math.sqrt(stickSquared - sqr(fieldWidth - MARGIN - position.x)));
+				else 
+					//smooth against top wall
+					return new Point2D.Double(position.x + direction * Math.sqrt(stickSquared - sqr(fieldHeight - MARGIN - position.y)), fieldHeight - MARGIN);
+	 
+			}
+			//Smooth against top wall
+			return new Point2D.Double(position.x + direction * Math.sqrt(stickSquared - sqr(fieldHeight - MARGIN - position.y)), fieldHeight - MARGIN); 
+		} else if(topOrBottomWall == BOTTOM){
+			if(leftOrRightWall == LEFT){
+				if(direction > 0)
+					//smooth against left wall
+					return new Point2D.Double(MARGIN, position.y + direction * Math.sqrt(stickSquared - sqr(position.x - MARGIN)));
+				else
+					//smooth against bottom wall
+					return new Point2D.Double(position.x - direction * Math.sqrt(stickSquared - sqr(position.y - MARGIN)), MARGIN);
+			} else if(leftOrRightWall == RIGHT){
+				if(direction > 0)
+					//smooth against bottom wall
+					return new Point2D.Double(position.x - direction * Math.sqrt(stickSquared - sqr(position.y - MARGIN)), MARGIN);
+				else
+					//smooth against right wall
+					return new Point2D.Double(fieldWidth - MARGIN, position.y - direction * Math.sqrt(stickSquared - sqr(fieldWidth - MARGIN - position.x)));
+	 
+			}
+			//Smooth against bottom wall
+			return new Point2D.Double(position.x - direction * Math.sqrt(stickSquared - sqr(position.y - MARGIN)), MARGIN);
+		}
+	 
+		if(leftOrRightWall == LEFT){
+			//smooth against left wall
+			return new Point2D.Double(MARGIN, position.y + direction * Math.sqrt(stickSquared - sqr(position.x - MARGIN)));
+		} else if(leftOrRightWall == RIGHT){
+			//smooth against right wall
+			return new Point2D.Double(fieldWidth - MARGIN, position.y - direction * Math.sqrt(stickSquared - sqr(fieldWidth - MARGIN - position.x)));
+		}
+	 
+		throw new RuntimeException("This code should be unreachable. position = " + position.x + ", " + position.y + "  orbitCenter = " + orbitCenter.x + ", " + orbitCenter.y + " direction = " + direction);
+	}
+	 
+	public static Point2D.Double projectPoint(Point2D.Double origin, double angle, double distance){
+		return new Point2D.Double(origin.x + distance * Math.sin(angle), origin.y + distance * Math.cos(angle));
+	}
+	
+	public static double absoluteAngle(Point2D.Double origin, Point2D.Double target) {
+	    return Math.atan2(target.x - origin.x, target.y - origin.y);
+	}
+	 
 }
