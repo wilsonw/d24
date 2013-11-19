@@ -120,9 +120,9 @@ public class TTank extends AdvancedRobot {
 	 * p1 is the centre of the battle field and p2 is the own bot location
 	 **/ 
 
-	public static double GetAngleOfLineBetweenTwoPoints(Point2D.Double p1, Point2D.Double p2) { 
-		double xDiff = p2.x - p1.x; 
-		double yDiff = p2.y - p1.y; 
+	public static double getAngleOfLineBetweenTwoPoints(Point2D p1, Point2D p2) { 
+		double xDiff = p2.getX() - p1.getX(); 
+		double yDiff = p2.getY() - p1.getY(); 
 		return Math.toDegrees(Math.atan2(yDiff, xDiff)); 
 	}
 
@@ -133,7 +133,7 @@ public class TTank extends AdvancedRobot {
 	 * returns the nearest point on the circumference of the ellipse
 	 * 
 	 */
-	public static Point2D PointOnEllipse(float width, float height, float angleInDegrees, Point2D p1) {
+	public static Point2D pointOnEllipse(double width, double height, double angleInDegrees, Point2D p1) {
 	        double ePX = p1.getX() + (int) (width  * Math.cos(Math.toRadians(angleInDegrees)));
 	        double ePY = p1.getY() + (int) (height * Math.sin(Math.toRadians(angleInDegrees)));
 	        return new Point2D.Double(ePX, ePY);
