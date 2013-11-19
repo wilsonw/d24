@@ -3,6 +3,7 @@
  */
 package d24;
 
+import java.awt.geom.Point2D;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -109,5 +110,32 @@ public class TTank extends AdvancedRobot {
 	    {
 	        fire(1);
 	    }
+	}
+	
+	/** 
+	 * Determines the angle of a straight line drawn between point one and two. 
+	 * The number returned, which is a double in degrees, tells us how much we have to rotate a horizontal line clockwise for it to match the line between the two points. 
+	 * If you prefer to deal with angles using radians instead of degrees, just change the last line to: "return Math.atan2(yDiff, xDiff);"
+	 * 
+	 * p1 is the centre of the battle field and p2 is the own bot location
+	 **/ 
+
+	public static double GetAngleOfLineBetweenTwoPoints(Point2D.Double p1, Point2D.Double p2) { 
+		double xDiff = p2.x - p1.x; 
+		double yDiff = p2.y - p1.y; 
+		return Math.toDegrees(Math.atan2(yDiff, xDiff)); 
+	}
+
+
+	/*
+	 * Given ellipse hight, width, angle and p1 is the centre of the battle field
+	 * 
+	 * returns the nearest point on the circumference of the ellipse
+	 * 
+	 */
+	public static Point2D PointOnEllipse(float width, float height, float angleInDegrees, Point2D p1) {
+	        double ePX = p1.getX() + (int) (width  * Math.cos(Math.toRadians(angleInDegrees)));
+	        double ePY = p1.getY() + (int) (height * Math.sin(Math.toRadians(angleInDegrees)));
+	        return new Point2D.Double(ePX, ePY);
 	}
 }
