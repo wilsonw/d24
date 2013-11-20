@@ -50,6 +50,45 @@ public class BotUtil {
 		double yDiff = p2.getY() - p1.getY(); 
 		return Math.toDegrees(Math.atan2(yDiff, xDiff)); 
 	}
+	
+	public static double getTurnLeftAngle(Point2D myPos, Point2D futurePos, double heading) {
+		double angle = getAngleOfLineBetweenTwoPoints(myPos, futurePos);
+		return heading - angle;
+	}
+	
+	/**
+	 * 
+	 * @param x1
+	 * @param y1
+	 * @param x2
+	 * @param y2
+	 * @return
+	 */
+	public static double absoluteBearing(double x1, double y1, double x2, double y2) {
+        double angle = getAngleOfLineBetweenTwoPoints(new Point2D.Double(x1, y1), new Point2D.Double(x2, y2));       
+        if (angle > 0 && angle < 90) {
+			return 90 - angle;
+		}
+		if (angle > 90) {
+			return 360 - (angle - 90);
+		}
+		if (angle < 0) {
+			return 90 + angle * -1;
+		}
+		return angle;
+    }
+
+	
+    /**
+     * normalizes a bearing to between +180 and -180
+     * @param angle
+     * @return
+     */
+    public static double normalizeBearing(double angle) {
+        while (angle >  180) angle -= 360;
+        while (angle < -180) angle += 360;
+        return angle;
+    }
 
 
 	/*
