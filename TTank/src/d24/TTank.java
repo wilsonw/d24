@@ -55,20 +55,20 @@ public class TTank extends AdvancedRobot {
 		double b = a; // circle
 		EllipseEquation.initialize(a, b, vertexX, vertexY);
 		
-		addCustomEvent(new Condition("too_close_to_walls") {
-            public boolean test() {
-                return (
-                    // we're too close to the left wall
-                    (getX() <= wallMargin ||
-                     // or we're too close to the right wall
-                     getX() >= getBattleFieldWidth() - wallMargin ||
-                     // or we're too close to the bottom wall
-                     getY() <= wallMargin ||
-                     // or we're too close to the top wall
-                     getY() >= getBattleFieldHeight() - wallMargin)
-                    );
-                }
-            });
+//		addCustomEvent(new Condition("too_close_to_walls") {
+//            public boolean test() {
+//                return (
+//                    // we're too close to the left wall
+//                    (getX() <= wallMargin ||
+//                     // or we're too close to the right wall
+//                     getX() >= getBattleFieldWidth() - wallMargin ||
+//                     // or we're too close to the bottom wall
+//                     getY() <= wallMargin ||
+//                     // or we're too close to the top wall
+//                     getY() >= getBattleFieldHeight() - wallMargin)
+//                    );
+//                }
+//            });
 		
 		while (true) {
 			applyStrategy = getOthers() == 1 ? STRATEGY_ONE_ONE : STRATEGY_MELEE;
@@ -174,12 +174,20 @@ public class TTank extends AdvancedRobot {
 			moveDirection *= -1;
 			setMaxVelocity(8);
 		}
-		setTurnRight(adjustHeadingForWall(normalizeBearing(nearest.getBearing() + 90 - (15 * moveDirection))));
+		if ((getX() <= wallMargin ||
+              getX() >= getBattleFieldWidth() - wallMargin ||
+              getY() <= wallMargin ||
+              getY() >= getBattleFieldHeight() - wallMargin)
+             ) {
+			moveDirection *= -1;
+		}
+		setTurnRight(normalizeBearing(nearest.getBearing() + 90 - (15 * moveDirection)));
 		setAhead(1000 * moveDirection);		
 		predictiveFire(nearest);
 	}
 	
 	private double adjustHeadingForWall(double x) {
+		
 		return x;
 	}
 
