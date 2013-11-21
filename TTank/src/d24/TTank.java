@@ -101,6 +101,7 @@ public class TTank extends AdvancedRobot {
 
 	@Override
 	public void onScannedRobot(ScannedRobotEvent event) {
+		out.println(event.getName());
 		if (enemies.containsKey(event.getName())) {
 			enemies.get(event.getName()).update(event, this);
 		} else {
@@ -141,9 +142,12 @@ public class TTank extends AdvancedRobot {
 	private EnemyTank findTargetEnemy() {
 		EnemyTank target = null;
 		for (EnemyTank et : enemies.values()) {
-			if (target == null || et.getDistance() < target.getDistance()) {
+			if ((target == null || et.getDistance() < target.getDistance()) && !et.getName().startsWith("d24.")) {
 				target = et;
 			}
+		}
+		if (enemies.values().size() == 1) {
+			target = enemies.values().iterator().next();
 		}
 		return target;
 	}
