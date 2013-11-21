@@ -12,19 +12,19 @@ public class EnemyTank {
 	private double heading;
 	private String name;
 	private double velocity;
-	
+
 	private double x;
-	
+
 	private double y;
-	
+
 	private boolean hasFired;
-	
+
 	private long lastUpdate;
-	
+
 	public EnemyTank() {
 		update(new ScannedRobotEvent(null, -1, 0, Double.MAX_VALUE, 0, 0));
 	}
-	
+
 	public EnemyTank(ScannedRobotEvent event) {
 		update(event);
 	}
@@ -60,7 +60,7 @@ public class EnemyTank {
 		return name;
 	}
 
-	public boolean isHasFired() {
+	public boolean hasFired() {
 		return hasFired;
 	}
 
@@ -75,18 +75,18 @@ public class EnemyTank {
 	public double getX() {
 		return x;
 	}
-	
+
 	public double getY() {
 		return y;
 	}
-	
+
 	public double getVelocity() {
 		return velocity;
 	}
-	
+
 	/**
 	 * updating information.
-	 * 
+	 *
 	 * @param e
 	 *            event.
 	 * @param robot
@@ -106,9 +106,9 @@ public class EnemyTank {
 
 	/**
 	 * predict the enemy's future x position.
-	 * 
+	 *
 	 * @return x the enemy future position.
-	 * 
+	 *
 	 * @param time
 	 *            which calculate in Beater class.
 	 */
@@ -119,9 +119,9 @@ public class EnemyTank {
 
 	/**
 	 * predict the enemy's future y position.
-	 * 
+	 *
 	 * @return y the enemy future position.
-	 * 
+	 *
 	 * @param time
 	 *            which calculate in Beater class.
 	 */
